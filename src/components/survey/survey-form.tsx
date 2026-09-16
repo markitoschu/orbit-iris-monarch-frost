@@ -26,7 +26,7 @@ import type { SurveyInput } from "@/lib/nila/types";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  "Welcome",
+  "Start Here",
   "You",
   "Where",
   "When",
@@ -199,7 +199,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
     <div className="flex flex-1 flex-col justify-center py-6">
       <p className="text-xs font-medium tracking-[0.2em] text-primary uppercase">Nila Yoga</p>
       <h1 className="mt-4 font-display text-4xl font-medium sm:text-5xl">
-        True Yoga closed. The practice doesn’t have to.
+        True Yoga is no more. The practice doesn’t have to.
       </h1>
       <p className="mt-5 max-w-prose text-muted-foreground">
         Nila is building her own small-group classes from the students who already know her. This
