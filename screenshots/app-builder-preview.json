@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Nila Yoga",
+      "hasCanvas": false,
+      "bodyTextLen": 556,
+      "bodyTextHash": "1cea9a14c328b8da564dcc6a25c2176ce1ed2f5302c4720e6b0f14e4ea307a7e",
+      "bodyTextPrefix": "Nila YOGA Student form Studio NILA YOGA True Yoga closed. The pr",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Nila Yoga",
+      "hasCanvas": false,
+      "bodyTextLen": 556,
+      "bodyTextHash": "1cea9a14c328b8da564dcc6a25c2176ce1ed2f5302c4720e6b0f14e4ea307a7e",
+      "bodyTextPrefix": "Nila YOGA Student form Studio NILA YOGA True Yoga closed. The pr",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
