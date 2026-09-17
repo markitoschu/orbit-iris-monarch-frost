@@ -5,7 +5,10 @@ import type { Student, SurveyInput } from "./types";
 
 const surveySchema = z.object({
   name: z.string().trim().min(1).max(60),
-  contactNumber: z.string().trim().min(1).max(20),
+  contactNumber: z
+    .string()
+    .trim()
+    .regex(/^[89]\d{7}$/, "Enter your 8-digit Singapore mobile number (starts with 8 or 9)"),
   locationPreference: z.string().min(1),
   availability: z.record(z.string(), z.array(z.string())),
   classTypes: z.array(z.string()).min(1),
