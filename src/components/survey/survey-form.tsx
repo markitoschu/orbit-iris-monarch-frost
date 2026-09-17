@@ -1,58 +1,41 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { ChoiceGroup } from "@/components/choice-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { ChoiceGroup } from "@/components/choice-group";
 import {
   AREAS,
   CLASS_TYPES,
-  COMMIT_STYLES,
   DAYS,
-  FREQUENCIES,
-  MAKEUP,
-  PACKAGES,
-  PRIORITIES,
-  TIME_BUCKETS,
-  TIME_WINDOWS,
   TRAVEL,
+  WEEKDAY_SLOTS,
+  WEEKEND_SLOTS,
 } from "@/lib/nila/constants";
 import { submitResponse } from "@/lib/nila/server";
 import type { SurveyInput } from "@/lib/nila/types";
-import { cn } from "@/lib/utils";
 
-const STEPS = [
-  "Start Here",
-  "You",
-  "Where",
-  "When",
-  "Practice",
-  "Paying",
-  "Studio",
-] as const;
+const STEPS = ["Welcome", "About you", "When & what"] as const;
 
 const empty: SurveyInput = {
-  firstName: "",
-  liveArea: "tampines",
-  workArea: "",
-  convenientAreas: [],
-  travel: "nearby",
-  preferredDays: [],
-  preferredTimes: [],
-  timeWindows: [],
+  name: "",
+  contactNumber: "",
+  locationPreference: "tampines",
+  travelWillingness: "nearby",
+  availability: {
+    mon: [],
+    tue: [],
+    wed: [],
+    thu: [],
+    fri: [],
+    sat: [],
+    sun: [],
+  },
   classTypes: [],
-  frequency: "weekly",
-  statedPrice: 20,
-  commitPrice: 18,
-  packages: [],
-  commitmentStyle: "flexible",
-  makeup: "valued",
-  studioPriorities: [],
-  trueYogaStudent: true,
 };
 
 export function SurveyForm() {
@@ -66,17 +49,12 @@ export function SurveyForm() {
     mutationFn: (payload: SurveyInput) => submitResponse({ data: payload }),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["responses"] });
-      setDone({ name: data.firstName.trim(), total: res.total });
+      setDone({ name: data.name.trim(), total: res.total });
     },
     onError: () => {
       toast.error("Could not save your answers. Please try again.");
     },
   });
-
-  const windowChoices = useMemo(() => {
-    if (data.preferredTimes.length === 0) return [...TIME_WINDOWS];
-    return TIME_WINDOWS.filter((w) => data.preferredTimes.includes(w.bucket));
-  }, [data.preferredTimes]);
 
   function patch(partial: Partial<SurveyInput>) {
     setData((prev) => ({ ...prev, ...partial }));
@@ -85,24 +63,15 @@ export function SurveyForm() {
 
   function validate(): string | null {
     if (step === 1) {
-      if (!data.firstName.trim()) return "Please add the name Nila knows you by.";
+      if (!data.name.trim()) return "Please enter your name.";
+      if (!data.contactNumber.trim()) return "Please enter your contact number.";
     }
     if (step === 2) {
-      if (data.convenientAreas.length === 0) return "Pick at least one area that works.";
-    }
-    if (step === 3) {
-      if (data.preferredDays.length === 0) return "Pick the days you could actually come.";
-      if (data.preferredTimes.length === 0) return "Pick a time of day.";
-      if (data.timeWindows.length === 0) return "Pick at least one specific window.";
-    }
-    if (step === 4) {
-      if (data.classTypes.length === 0) return "Pick the practices you want.";
-    }
-    if (step === 5) {
-      if (data.packages.length === 0) return "Pick how you’d like to pay.";
-    }
-    if (step === 6) {
-      if (data.studioPriorities.length === 0) return "Pick up to three studio priorities.";
+      if (!data.locationPreference) return "Please select a location preference.";
+      if (!data.travelWillingness) return "Please select how far you'll travel.";
+      const hasAnyAvailability = Object.values(data.availability).some((slots) => slots.length > 0);
+      if (!hasAnyAvailability) return "Please select at least one time slot.";
+      if (data.classTypes.length === 0) return "Please select at least one class type.";
     }
     return null;
   }
@@ -123,8 +92,8 @@ export function SurveyForm() {
         <p className="text-xs font-medium tracking-[0.18em] text-primary uppercase">Received</p>
         <h1 className="mt-3 font-display text-4xl font-medium">Thank you, {done.name}.</h1>
         <p className="mt-4 text-muted-foreground">
-          You’re one of {done.total} people helping Nila choose where, when, and how to teach —
-          working backwards from this community, not from an empty studio.
+          You're one of {done.total} people helping Nila plan where and when to teach — working
+          backwards from real demand.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button asChild>
@@ -162,20 +131,14 @@ export function SurveyForm() {
           </div>
 
           <div className="flex-1">
-            {step === 1 && <StepYou data={data} patch={patch} />}
-            {step === 2 && <StepWhere data={data} patch={patch} />}
-            {step === 3 && (
-              <StepWhen data={data} patch={patch} windowChoices={windowChoices} />
-            )}
-            {step === 4 && <StepPractice data={data} patch={patch} />}
-            {step === 5 && <StepPay data={data} patch={patch} />}
-            {step === 6 && <StepStudio data={data} patch={patch} />}
+            {step === 1 && <StepAboutYou data={data} patch={patch} />}
+            {step === 2 && <StepWhenAndWhat data={data} patch={patch} />}
           </div>
 
           {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
 
           <div className="mt-8 flex items-center justify-between gap-3">
-            <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>
+            <Button variant="ghost" onClick={() => setStep((s) => s - 1)} disabled={step === 1}>
               <ArrowLeft className="size-4" />
               Back
             </Button>
@@ -199,27 +162,27 @@ function Welcome({ onStart }: { onStart: () => void }) {
     <div className="flex flex-1 flex-col justify-center py-6">
       <p className="text-xs font-medium tracking-[0.2em] text-primary uppercase">Nila Yoga</p>
       <h1 className="mt-4 font-display text-4xl font-medium sm:text-5xl">
-        True Yoga is no more. The practice doesn’t have to.
+        True Yoga closed. The practice doesn't have to.
       </h1>
       <p className="mt-5 max-w-prose text-muted-foreground">
-        Nila is building her own small-group classes from the students who already know her. This
-        is not a mailing list. Tell her where you live, when you can actually come, and what you’d
-        pay — and she will rent a studio around that, not the other way around.
+        Nila is building her own small-group classes from students who already know her. Tell her
+        when you're free and what you want to practise — she will build classes around your
+        availability, not the other way around.
       </p>
-      <ul className="mt-6 space-y-2 text-sm text-ink-soft">
-        <li>About four minutes. First name only — she already has the student group.</li>
-        <li>Honest answers beat polite ones. Flexibility and price matter.</li>
-        <li>Nothing is booked until a cluster is large enough to cover rent.</li>
+      <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
+        <li>Two minutes. We'll WhatsApp you when classes launch.</li>
+        <li>Honest answers help. Pick the times you'll actually show up.</li>
+        <li>Classes only launch when there's real demand.</li>
       </ul>
       <Button onClick={onStart} size="lg" className="mt-8 w-full sm:w-auto">
-        Start the form
+        Start
         <ArrowRight className="size-4" />
       </Button>
     </div>
   );
 }
 
-function StepYou({
+function StepAboutYou({
   data,
   patch,
 }: {
@@ -229,309 +192,156 @@ function StepYou({
   return (
     <div className="space-y-6">
       <header>
-        <h2 className="font-display text-3xl font-medium">Who’s filling this in?</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Use the name Nila knows you by in class. Follow-up stays in her existing student WhatsApp
-          group — this form is for planning, not collecting numbers.
-        </p>
+        <h2 className="font-display text-3xl font-medium">Who's this for?</h2>
       </header>
+
       <div className="space-y-2">
-        <Label htmlFor="firstName">First name</Label>
+        <Label htmlFor="name">Name</Label>
         <Input
-          id="firstName"
+          id="name"
           autoComplete="given-name"
-          value={data.firstName}
-          onChange={(e) => patch({ firstName: e.target.value })}
+          value={data.name}
+          onChange={(e) => patch({ name: e.target.value })}
           placeholder="Mei"
         />
       </div>
+
       <div className="space-y-2">
-        <Label>Were you taking Nila’s class at True Yoga?</Label>
-        <ChoiceGroup
-          options={[
-            { id: "yes", label: "Yes — I’m already her student" },
-            { id: "no", label: "Not yet, but I want to join" },
-          ]}
-          value={data.trueYogaStudent ? "yes" : "no"}
-          onChange={(v) => patch({ trueYogaStudent: v === "yes" })}
-          columns="stack"
+        <Label htmlFor="contact">Contact number</Label>
+        <Input
+          id="contact"
+          autoComplete="tel"
+          value={data.contactNumber}
+          onChange={(e) => patch({ contactNumber: e.target.value })}
+          placeholder="+65 9xxx xxxx"
         />
       </div>
+
       <div className="space-y-2">
-        <Label>Where do you live?</Label>
+        <Label>What's your location preference?</Label>
         <ChoiceGroup
           options={AREAS}
-          value={data.liveArea}
-          onChange={(v) => patch({ liveArea: v as SurveyInput["liveArea"] })}
+          value={data.locationPreference}
+          onChange={(v) => patch({ locationPreference: v as SurveyInput["locationPreference"] })}
         />
       </div>
-      <div className="space-y-2">
-        <Label>Where do you work? (optional)</Label>
-        <ChoiceGroup
-          options={[{ id: "", label: "I work from home / skip" }, ...AREAS]}
-          value={data.workArea}
-          onChange={(v) => patch({ workArea: v as SurveyInput["workArea"] })}
-        />
-      </div>
-    </div>
-  );
-}
 
-function StepWhere({
-  data,
-  patch,
-}: {
-  data: SurveyInput;
-  patch: (p: Partial<SurveyInput>) => void;
-}) {
-  return (
-    <div className="space-y-6">
-      <header>
-        <h2 className="font-display text-3xl font-medium">Where would you actually go?</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Pick every neighbourhood you’d attend a class in — home, work, or a convenient MRT.
-        </p>
-      </header>
-      <ChoiceGroup
-        multiple
-        options={AREAS}
-        value={data.convenientAreas}
-        onChange={(v) => patch({ convenientAreas: v as SurveyInput["convenientAreas"] })}
-      />
       <div className="space-y-2">
         <Label>How far will you travel for Nila?</Label>
         <ChoiceGroup
           columns="stack"
           options={TRAVEL}
-          value={data.travel}
-          onChange={(v) => patch({ travel: v as SurveyInput["travel"] })}
+          value={data.travelWillingness}
+          onChange={(v) => patch({ travelWillingness: v as SurveyInput["travelWillingness"] })}
         />
       </div>
     </div>
   );
 }
 
-function StepWhen({
-  data,
-  patch,
-  windowChoices,
-}: {
-  data: SurveyInput;
-  patch: (p: Partial<SurveyInput>) => void;
-  windowChoices: readonly { id: string; label: string }[];
-}) {
-  return (
-    <div className="space-y-6">
-      <header>
-        <h2 className="font-display text-3xl font-medium">When can you show up?</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Be realistic. A Friday you miss twice a month should not look like a sure thing.
-        </p>
-      </header>
-      <div className="space-y-2">
-        <Label>Days</Label>
-        <ChoiceGroup
-          multiple
-          options={DAYS}
-          value={data.preferredDays}
-          onChange={(v) => patch({ preferredDays: v as SurveyInput["preferredDays"] })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Time of day</Label>
-        <ChoiceGroup
-          multiple
-          options={TIME_BUCKETS}
-          value={data.preferredTimes}
-          onChange={(v) => {
-            const times = v as SurveyInput["preferredTimes"];
-            const allowed = new Set(
-              TIME_WINDOWS.filter((w) => times.includes(w.bucket)).map((w) => w.id),
-            );
-            patch({
-              preferredTimes: times,
-              timeWindows: data.timeWindows.filter((id) => allowed.has(id)),
-            });
-          }}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Specific windows</Label>
-        <ChoiceGroup
-          multiple
-          options={windowChoices}
-          value={data.timeWindows}
-          onChange={(v) => patch({ timeWindows: v as SurveyInput["timeWindows"] })}
-        />
-      </div>
-    </div>
-  );
-}
-
-function StepPractice({
+function StepWhenAndWhat({
   data,
   patch,
 }: {
   data: SurveyInput;
   patch: (p: Partial<SurveyInput>) => void;
 }) {
-  return (
-    <div className="space-y-6">
-      <header>
-        <h2 className="font-display text-3xl font-medium">What do you want to practise?</h2>
-      </header>
-      <ChoiceGroup
-        multiple
-        options={CLASS_TYPES}
-        value={data.classTypes}
-        onChange={(v) => patch({ classTypes: v as SurveyInput["classTypes"] })}
-      />
-      <div className="space-y-2">
-        <Label>How often, realistically?</Label>
-        <ChoiceGroup
-          columns="stack"
-          options={FREQUENCIES}
-          value={data.frequency}
-          onChange={(v) => patch({ frequency: v as SurveyInput["frequency"] })}
-        />
-      </div>
-    </div>
-  );
-}
-
-function StepPay({
-  data,
-  patch,
-}: {
-  data: SurveyInput;
-  patch: (p: Partial<SurveyInput>) => void;
-}) {
-  return (
-    <div className="space-y-6">
-      <header>
-        <h2 className="font-display text-3xl font-medium">What would you actually pay?</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Two numbers. The first is what feels fair. The second is what you’d commit this month —
-          that’s the one Nila will plan rent around.
-        </p>
-      </header>
-      <PricePicker
-        label="Feels fair for 60 minutes with Nila"
-        value={data.statedPrice}
-        onChange={(statedPrice) => patch({ statedPrice })}
-      />
-      <PricePicker
-        label="I would actually buy at this price, now"
-        value={data.commitPrice}
-        onChange={(commitPrice) => patch({ commitPrice })}
-      />
-      <div className="space-y-2">
-        <Label>How would you like to pay?</Label>
-        <ChoiceGroup
-          multiple
-          columns="stack"
-          options={PACKAGES}
-          value={data.packages}
-          onChange={(v) => patch({ packages: v as SurveyInput["packages"] })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Commitment</Label>
-        <ChoiceGroup
-          columns="stack"
-          options={COMMIT_STYLES}
-          value={data.commitmentStyle}
-          onChange={(v) => patch({ commitmentStyle: v as SurveyInput["commitmentStyle"] })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>If you miss your usual class</Label>
-        <ChoiceGroup
-          columns="stack"
-          options={MAKEUP}
-          value={data.makeup}
-          onChange={(v) => patch({ makeup: v as SurveyInput["makeup"] })}
-        />
-      </div>
-    </div>
-  );
-}
-
-function StepStudio({
-  data,
-  patch,
-}: {
-  data: SurveyInput;
-  patch: (p: Partial<SurveyInput>) => void;
-}) {
-  function toggle(id: SurveyInput["studioPriorities"][number]) {
-    const set = new Set(data.studioPriorities);
-    if (set.has(id)) set.delete(id);
-    else if (set.size < 3) set.add(id);
-    patch({ studioPriorities: [...set] });
+  function toggleAvailability(day: string, slot: string) {
+    patch({
+      availability: {
+        ...data.availability,
+        [day]: data.availability[day].includes(slot)
+          ? data.availability[day].filter((s) => s !== slot)
+          : [...data.availability[day], slot],
+      },
+    });
   }
 
+  const isWeekend = (day: string) => day === "sat" || day === "sun";
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header>
-        <h2 className="font-display text-3xl font-medium">What matters in the room?</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Pick up to three.</p>
+        <h2 className="font-display text-3xl font-medium">When can you come?</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Select all the time slots when you're typically free. You can choose multiple per day,
+          or skip days entirely.
+        </p>
       </header>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {PRIORITIES.map((p) => {
-          const on = data.studioPriorities.includes(p.id);
-          const full = !on && data.studioPriorities.length >= 3;
-          return (
-            <button
-              key={p.id}
-              type="button"
-              disabled={full}
-              onClick={() => toggle(p.id)}
-              className={cn(
-                "min-h-11 rounded-lg px-3.5 py-3 text-left text-sm font-medium transition-colors duration-150",
-                on ? "bg-primary text-primary-foreground" : "bg-card shadow-card",
-                full && "opacity-40",
+
+      {/* Availability by day */}
+      <div className="space-y-6">
+        {DAYS.map((day) => (
+          <div key={day.id} className="space-y-2">
+            <Label className="text-base font-medium">{day.label}</Label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {isWeekend(day.id) ? (
+                WEEKEND_SLOTS.map((slot) => (
+                  <SlotButton
+                    key={slot.id}
+                    label={slot.label}
+                    selected={data.availability[day.id].includes(slot.id)}
+                    period={slot.period}
+                    onClick={() => toggleAvailability(day.id, slot.id)}
+                  />
+                ))
+              ) : (
+                WEEKDAY_SLOTS.map((slot) => (
+                  <SlotButton
+                    key={slot.id}
+                    label={slot.label}
+                    selected={data.availability[day.id].includes(slot.id)}
+                    period={slot.period}
+                    onClick={() => toggleAvailability(day.id, slot.id)}
+                  />
+                ))
               )}
-            >
-              {p.label}
-            </button>
-          );
-        })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        <Label>What would you like to practise?</Label>
+        <ChoiceGroup
+          multiple
+          options={CLASS_TYPES}
+          value={data.classTypes}
+          onChange={(v) => patch({ classTypes: v as SurveyInput["classTypes"] })}
+        />
       </div>
     </div>
   );
 }
 
-function PricePicker({
+function SlotButton({
   label,
-  value,
-  onChange,
+  selected,
+  period,
+  onClick,
 }: {
   label: string;
-  value: number;
-  onChange: (n: number) => void;
+  selected: boolean;
+  period: string;
+  onClick: () => void;
 }) {
-  const options = [15, 18, 20, 22, 25, 28, 30];
+  const isWarmPeriod = period === "morning" || period === "afternoon";
+  const bgColor = isWarmPeriod ? "bg-amber-100" : "bg-blue-100";
+  const selectedBgColor = isWarmPeriod ? "bg-amber-500" : "bg-blue-500";
+  const selectedTextColor = "text-white";
+  const unselectedTextColor = isWarmPeriod ? "text-amber-900" : "text-blue-900";
+
   return (
-    <div className="space-y-2">
-      <Label>
-        {label} — <span className="tabular-nums">S${value}</span>
-      </Label>
-      <div className="flex flex-wrap gap-2">
-        {options.map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(n)}
-            className={cn(
-              "h-11 min-w-14 rounded-md px-3 text-sm font-medium tabular-nums transition-colors duration-150",
-              n === value ? "bg-primary text-primary-foreground" : "bg-card shadow-card",
-            )}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+        selected
+          ? `${selectedBgColor} ${selectedTextColor}`
+          : `${bgColor} ${unselectedTextColor}`
+      }`}
+    >
+      {label}
+    </button>
   );
 }
