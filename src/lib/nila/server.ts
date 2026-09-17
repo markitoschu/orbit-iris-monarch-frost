@@ -112,17 +112,8 @@ async function insertStudent(
   return Number(rows[0]?.id ?? 0);
 }
 
-async function ensureSeed(sql: Awaited<ReturnType<typeof getSql>>) {
-  const counted = await sql<{ n: number }>`select count(*)::int as n from responses`;
-  if (Number(counted[0]?.n ?? 0) > 0) return;
-  for (const student of SEED_STUDENTS) {
-    await insertStudent(sql, student);
-  }
-}
-
 export const listResponses = createServerFn({ method: "GET" }).handler(async () => {
   const sql = await getSql();
-  await ensureSeed(sql);
   const rows = await sql<RawRow>`select * from responses order by id asc`;
   return rows.map(parseRow);
 });
@@ -131,8 +122,8 @@ export const submitResponse = createServerFn({ method: "POST" })
   .validator((data: unknown) => surveySchema.parse(data))
   .handler(async ({ data }) => {
     const sql = await getSql();
-    await ensureSeed(sql);
     const id = await insertStudent(sql, data as SurveyInput);
     const counted = await sql<{ n: number }>`select count(*)::int as n from responses`;
     return { id, total: Number(counted[0]?.n ?? 0) };
   });
+
