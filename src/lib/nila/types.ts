@@ -2,7 +2,6 @@ export interface SurveyInput {
   name: string;
   contactNumber: string;
   locationPreference: string;
-  travelWillingness: string;
   availability: Record<string, string[]>;
   classTypes: string[];
 }
