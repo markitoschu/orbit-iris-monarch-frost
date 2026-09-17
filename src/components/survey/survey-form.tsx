@@ -12,7 +12,6 @@ import {
   AREAS,
   CLASS_TYPES,
   DAYS,
-  TRAVEL,
   WEEKDAY_SLOTS,
   WEEKEND_SLOTS,
 } from "@/lib/nila/constants";
@@ -25,7 +24,6 @@ const empty: SurveyInput = {
   name: "",
   contactNumber: "",
   locationPreference: "tampines",
-  travelWillingness: "nearby",
   availability: {
     mon: [],
     tue: [],
@@ -65,10 +63,9 @@ export function SurveyForm() {
     if (step === 1) {
       if (!data.name.trim()) return "Please enter your name.";
       if (!data.contactNumber.trim()) return "Please enter your contact number.";
+      if (!data.locationPreference) return "Please select a location.";
     }
     if (step === 2) {
-      if (!data.locationPreference) return "Please select a location preference.";
-      if (!data.travelWillingness) return "Please select how far you'll travel.";
       const hasAnyAvailability = Object.values(data.availability).some((slots) => slots.length > 0);
       if (!hasAnyAvailability) return "Please select at least one time slot.";
       if (data.classTypes.length === 0) return "Please select at least one class type.";
@@ -92,13 +89,9 @@ export function SurveyForm() {
         <p className="text-xs font-medium tracking-[0.18em] text-primary uppercase">Received</p>
         <h1 className="mt-3 font-display text-4xl font-medium">Thank you, {done.name}.</h1>
         <p className="mt-4 text-muted-foreground">
-          You're one of {done.total} people helping Nila plan where and when to teach — working
-          backwards from real demand.
+          You're one of {done.total} people helping Nila serve you better. She'll be in touch soon.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button asChild>
-            <Link to="/studio">See the studio view</Link>
-          </Button>
           <Button
             variant="outline"
             onClick={() => {
@@ -162,17 +155,15 @@ function Welcome({ onStart }: { onStart: () => void }) {
     <div className="flex flex-1 flex-col justify-center py-6">
       <p className="text-xs font-medium tracking-[0.2em] text-primary uppercase">Nila Yoga</p>
       <h1 className="mt-4 font-display text-4xl font-medium sm:text-5xl">
-        True Yoga closed. The practice doesn't have to.
+        Nila is collecting data from her members.
       </h1>
       <p className="mt-5 max-w-prose text-muted-foreground">
-        Nila is building her own small-group classes from students who already know her. Tell her
-        when you're free and what you want to practise — she will build classes around your
-        availability, not the other way around.
+        Nila wants to understand your preferences and serve you better. Tell her when you're free, what you want to practise, and how to reach you. She'll build classes around your availability.
       </p>
       <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-        <li>Two minutes. We'll WhatsApp you when classes launch.</li>
+        <li>Two minutes. Your contact info helps Nila reach out.</li>
         <li>Honest answers help. Pick the times you'll actually show up.</li>
-        <li>Classes only launch when there's real demand.</li>
+        <li>Classes launch when there's enough demand.</li>
       </ul>
       <Button onClick={onStart} size="lg" className="mt-8 w-full sm:w-auto">
         Start
@@ -225,16 +216,6 @@ function StepAboutYou({
           onChange={(v) => patch({ locationPreference: v as SurveyInput["locationPreference"] })}
         />
       </div>
-
-      <div className="space-y-2">
-        <Label>How far will you travel for Nila?</Label>
-        <ChoiceGroup
-          columns="stack"
-          options={TRAVEL}
-          value={data.travelWillingness}
-          onChange={(v) => patch({ travelWillingness: v as SurveyInput["travelWillingness"] })}
-        />
-      </div>
     </div>
   );
 }
@@ -264,8 +245,7 @@ function StepWhenAndWhat({
       <header>
         <h2 className="font-display text-3xl font-medium">When can you come?</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Select all the time slots when you're typically free. You can choose multiple per day,
-          or skip days entirely.
+          Select all the time slots when you're typically free. You can choose multiple per day, or skip days entirely.
         </p>
       </header>
 
