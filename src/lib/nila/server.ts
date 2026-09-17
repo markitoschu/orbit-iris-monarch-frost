@@ -7,7 +7,6 @@ const surveySchema = z.object({
   name: z.string().trim().min(1).max(60),
   contactNumber: z.string().trim().min(1).max(20),
   locationPreference: z.string().min(1),
-  travelWillingness: z.string().min(1),
   availability: z.record(z.string(), z.array(z.string())),
   classTypes: z.array(z.string()).min(1),
 });
@@ -17,7 +16,6 @@ type RawRow = {
   name: string;
   contact_number: string;
   location_preference: string;
-  travel_willingness: string;
   availability: string;
   class_types: string;
   created_at: string;
@@ -36,8 +34,7 @@ function parseRow(row: RawRow): Student {
     id: Number(row.id),
     name: row.name,
     contactNumber: row.contact_number,
-    locationPreference: row.location_preference as any,
-    travelWillingness: row.travel_willingness as any,
+    locationPreference: row.location_preference,
     availability: parseJson(row.availability, {}),
     classTypes: parseJson(row.class_types, []),
     createdAt: String(row.created_at),
@@ -50,12 +47,11 @@ async function insertStudent(
 ): Promise<number> {
   const rows = await sql<{ id: number }>`
     insert into responses (
-      name, contact_number, location_preference, travel_willingness, availability, class_types
+      name, contact_number, location_preference, availability, class_types
     ) values (
       ${data.name},
       ${data.contactNumber},
       ${data.locationPreference},
-      ${data.travelWillingness},
       ${JSON.stringify(data.availability)},
       ${JSON.stringify(data.classTypes)}
     )
