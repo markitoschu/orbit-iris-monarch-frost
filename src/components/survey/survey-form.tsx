@@ -36,6 +36,14 @@ const empty: SurveyInput = {
   classTypes: [],
 };
 
+// Keep only digits, max 8. If someone pastes "+65 8123 4567",
+// the leading 65 is dropped automatically.
+function normalizeSgPhone(raw: string): string {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length === 10 && digits.startsWith("65")) digits = digits.slice(2);
+  return digits.slice(0, 8);
+}
+
 export function SurveyForm() {
   const [step, setStep] = useState(0);
   const [data, setData] = useState<SurveyInput>(empty);
@@ -198,14 +206,23 @@ function StepAboutYou({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="contact">Contact number</Label>
+        <Label htmlFor="contact">Mobile number</Label>
         <Input
           id="contact"
-          autoComplete="tel"
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
           value={data.contactNumber}
-          onChange={(e) => patch({ contactNumber: e.target.value })}
-          placeholder="+65 9xxx xxxx"
+          onChange={(e) => {
+            const digits = normalizeSgPhone(e.target.value);
+            e.target.value = digits;
+            patch({ contactNumber: digits });
+          }}
+          placeholder="8123 4567"
         />
+        <p className="text-xs text-muted-foreground">
+          8 digits, starts with 8 or 9 — no +65 needed.
+        </p>
       </div>
 
       <div className="space-y-2">
